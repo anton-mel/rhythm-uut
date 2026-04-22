@@ -12,7 +12,9 @@ iverilog -g2005 -Wall \
     -o "$OUT" \
     sim/primitives.v \
     sim/tb_main.v \
+    top.v \
     main.v \
+    processor_sandbox.v \
     variable_freq_clk_generator.v \
     RAM_bank.v \
     RAM_block.v \
