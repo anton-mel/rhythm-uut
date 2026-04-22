@@ -2,10 +2,7 @@
 // Company: 		 Intan Technologies, LLC
 //                 Copyright (c) 2013-2014 Intan Technologies LLC
 // 
-// Design Name:    RHD2000 Rhythm Interface - MODIFIED for Open EPhys aq. board Nov 2014
-// see here for details on how this fork differs from the Intan code:  https://open-ephys.atlassian.net/wiki/display/OEW/Rhythm+firmware+fork
-//
-//
+// Design Name:    RHD2000 Rhythm Interface
 // Module Name:    main, command_selector
 // Project Name:   Opal Kelly FPGA/USB RHD2000 Interface
 // Target Devices: 
@@ -62,159 +59,96 @@
 
 `timescale 1ns/1ps
 
-module main #(
-	// All of these parameters for the 'main' module relate to the SDRAM interface
-	parameter C3_P0_MASK_SIZE           = 4,
-	parameter C3_P0_DATA_PORT_SIZE      = 32,
-	parameter C3_P1_MASK_SIZE           = 4,
-	parameter C3_P1_DATA_PORT_SIZE      = 32,
-	parameter DEBUG_EN                  = 0,       
-	parameter C3_MEMCLK_PERIOD          = 3200,       
-	parameter C3_CALIB_SOFT_IP          = "TRUE",       
-	parameter C3_SIMULATION             = "FALSE",       
-	parameter C3_HW_TESTING             = "FALSE",       
-	parameter C3_RST_ACT_LOW            = 0,       
-	parameter C3_INPUT_CLK_TYPE         = "DIFFERENTIAL",       
-	parameter C3_MEM_ADDR_ORDER         = "ROW_BANK_COLUMN",       
-	parameter C3_NUM_DQ_PINS            = 16,       
-	parameter C3_MEM_ADDR_WIDTH         = 13,       
-	parameter C3_MEM_BANKADDR_WIDTH     = 3        
-	)
-	(
+module main (
 
-	input  wire [7:0]  							  hi_in,
-	output wire [1:0]  							  hi_out,
-	inout  wire [15:0] 							  hi_inout,
-	inout  wire        							  hi_aa,
-	
-	output wire        							  i2c_sda,
-	output wire        							  i2c_scl,
-	output wire        							  hi_muxsel,
-	
-	output wire [7:0]  							  led,
-	
-	input  wire                              clk1_in, // CY22393 CLKA, f = 100MHz
+	input  wire        clk1_in,   // 100 MHz input clock
+	input  wire        reset,     // active-high reset
 
-	inout  wire [C3_NUM_DQ_PINS-1:0]         mcb3_dram_dq,
-	output wire [C3_MEM_ADDR_WIDTH-1:0]      mcb3_dram_a,
-	output wire [C3_MEM_BANKADDR_WIDTH-1:0]  mcb3_dram_ba,
-	output wire                              mcb3_dram_ras_n,
-	output wire                              mcb3_dram_cas_n,
-	output wire                              mcb3_dram_we_n,
-	output wire                              mcb3_dram_odt,
-	output wire                              mcb3_dram_cke,
-	output wire                              mcb3_dram_dm,
-	inout  wire                              mcb3_dram_udqs,
-	inout  wire                              mcb3_dram_udqs_n,
-	inout  wire                              mcb3_rzq,
-	inout  wire                              mcb3_zio,
-	output wire                              mcb3_dram_udm,
-	inout  wire                              mcb3_dram_dqs,
-	inout  wire                              mcb3_dram_dqs_n,
-	output wire                              mcb3_dram_ck,
-	output wire                              mcb3_dram_ck_n,
-	output wire                              mcb3_dram_cs_n,
-	
-	input wire                               MISO_A1_p,
-	input wire                               MISO_A1_n,
-	input wire                               MISO_A2_p,
-	input wire                               MISO_A2_n,
-	output wire                              CS_b_A_p,
-	output wire                              CS_b_A_n,
-	output wire                              SCLK_A_p,
-	output wire                              SCLK_A_n,
-	output wire                              MOSI_A_p,
-	output wire                              MOSI_A_n,
+	output wire [7:0]  led,
 
-	input wire                               MISO_B1_p,
-	input wire                               MISO_B1_n,
-	input wire                               MISO_B2_p,
-	input wire                               MISO_B2_n,
-	output wire                              CS_b_B_p,
-	output wire                              CS_b_B_n,
-	output wire                              SCLK_B_p,
-	output wire                              SCLK_B_n,
-	output wire                              MOSI_B_p,
-	output wire                              MOSI_B_n,
+	input  wire        MISO_A1_p,
+	input  wire        MISO_A1_n,
+	input  wire        MISO_A2_p,
+	input  wire        MISO_A2_n,
+	output wire        CS_b_A_p,
+	output wire        CS_b_A_n,
+	output wire        SCLK_A_p,
+	output wire        SCLK_A_n,
+	output wire        MOSI_A_p,
+	output wire        MOSI_A_n,
 
-	input wire                               MISO_C1_p,
-	input wire                               MISO_C1_n,
-	input wire                               MISO_C2_p,
-	input wire                               MISO_C2_n,
-	output wire                              CS_b_C_p,
-	output wire                              CS_b_C_n,
-	output wire                              SCLK_C_p,
-	output wire                              SCLK_C_n,
-	output wire                              MOSI_C_p,
-	output wire                              MOSI_C_n,
+	input  wire        MISO_B1_p,
+	input  wire        MISO_B1_n,
+	input  wire        MISO_B2_p,
+	input  wire        MISO_B2_n,
+	output wire        CS_b_B_p,
+	output wire        CS_b_B_n,
+	output wire        SCLK_B_p,
+	output wire        SCLK_B_n,
+	output wire        MOSI_B_p,
+	output wire        MOSI_B_n,
 
-	input wire                               MISO_D1_p,
-	input wire                               MISO_D1_n,
-	input wire                               MISO_D2_p,
-	input wire                               MISO_D2_n,
-	output wire                              CS_b_D_p,
-	output wire                              CS_b_D_n,
-	output wire                              SCLK_D_p,
-	output wire                              SCLK_D_n,
-	output wire                              MOSI_D_p,
-	output wire                              MOSI_D_n,
-	
-	//debug output disabled by default
-	//output												CS_b,
-	//output 	                              SCLK,
-	//output    	                           MOSI_A,
-	//output       	                        MOSI_B,
-	//output          	                     MOSI_C,
-	//output             	                  MOSI_D,
-	
-	// Open-ephys
-	// Replace sample_clk output with variable freq sync output
-	//output reg										  sample_clk,
-	output wire 									  sync, // BNC-clock output
-	
-	input wire [15:0]								  TTL_in,
-	output wire [15:0]							  TTL_out,
-	
-	output wire										  DAC_SYNC,
-	output wire										  DAC_SCLK,
-	output wire										  DAC_DIN_1,
-	output wire										  DAC_DIN_2,
-	output wire										  DAC_DIN_3,
-	output wire										  DAC_DIN_4,
-	output wire										  DAC_DIN_5,
-	output wire										  DAC_DIN_6,
-	output wire										  DAC_DIN_7,
-	output wire										  DAC_DIN_8,
-	
-	output wire										  ADC_CS,
-	output wire										  ADC_SCLK,
-	input wire										  ADC_DOUT_1,
-	input wire										  ADC_DOUT_2,
-	input wire										  ADC_DOUT_3,
-	input wire										  ADC_DOUT_4,
-	input wire										  ADC_DOUT_5,
-	input wire										  ADC_DOUT_6,
-	input wire										  ADC_DOUT_7,
-	input wire										  ADC_DOUT_8,
-	
-	input wire [3:0]								  board_mode,
-	output wire										  LED_OUT,
-	
-	output wire										  harp_tx,
-	output wire										  harp_led
-	
+	input  wire        MISO_C1_p,
+	input  wire        MISO_C1_n,
+	input  wire        MISO_C2_p,
+	input  wire        MISO_C2_n,
+	output wire        CS_b_C_p,
+	output wire        CS_b_C_n,
+	output wire        SCLK_C_p,
+	output wire        SCLK_C_n,
+	output wire        MOSI_C_p,
+	output wire        MOSI_C_n,
+
+	input  wire        MISO_D1_p,
+	input  wire        MISO_D1_n,
+	input  wire        MISO_D2_p,
+	input  wire        MISO_D2_n,
+	output wire        CS_b_D_p,
+	output wire        CS_b_D_n,
+	output wire        SCLK_D_p,
+	output wire        SCLK_D_n,
+	output wire        MOSI_D_p,
+	output wire        MOSI_D_n,
+
+	output reg         CS_b,
+	output reg         SCLK,
+	output reg         MOSI_A,
+	output reg         MOSI_B,
+	output reg         MOSI_C,
+	output reg         MOSI_D,
+
+	output reg         sample_clk,
+
+	input  wire [15:0] TTL_in,
+	output wire [15:0] TTL_out,
+
+	output wire        DAC_SYNC,
+	output wire        DAC_SCLK,
+	output wire        DAC_DIN_1,
+	output wire        DAC_DIN_2,
+	output wire        DAC_DIN_3,
+	output wire        DAC_DIN_4,
+	output wire        DAC_DIN_5,
+	output wire        DAC_DIN_6,
+	output wire        DAC_DIN_7,
+	output wire        DAC_DIN_8,
+
+	output wire        ADC_CS,
+	output wire        ADC_SCLK,
+	input  wire        ADC_DOUT_1,
+	input  wire        ADC_DOUT_2,
+	input  wire        ADC_DOUT_3,
+	input  wire        ADC_DOUT_4,
+	input  wire        ADC_DOUT_5,
+	input  wire        ADC_DOUT_6,
+	input  wire        ADC_DOUT_7,
+	input  wire        ADC_DOUT_8,
+
+	input  wire [3:0]  board_mode,
+
+	output wire [15:0] data_out,   // 16-bit word stream (header + electrode samples)
+	output wire        data_valid  // one dataclk-cycle pulse per valid word
 	);
-
-	assign i2c_sda    = 1'bz;
-	assign i2c_scl    = 1'bz;
-	assign hi_muxsel  = 1'b0;
-	
-	reg                               CS_b;
-	reg                               SCLK;
-	reg                               MOSI_A;
-	reg                               MOSI_B;
-	reg                               MOSI_C;
-	reg                               MOSI_D;
 
 
 	// LVDS output pins
@@ -267,24 +201,24 @@ module main #(
 	
 	// Wires and registers
 
-	wire 				clk1;				// buffered 100 MHz clock
-	wire				dataclk;			// programmable frequency clock (f = 2800 * per-channel amplifier sampling rate)
-	wire				dataclk_locked, DCM_prog_done;
-	
-	reg [15:0]		FIFO_data_in;
-	reg				FIFO_write_to;
-	wire [15:0] 	FIFO_data_out;
-	wire				FIFO_read_from;
-	wire [31:0] 	num_words_in_FIFO;
+	wire				clk1 = clk1_in;	// 100 MHz clock
+	wire				dataclk;			// SPI state-machine clock (84 MHz → 30 kS/s per channel)
+	wire				dataclk_locked;
 
-	wire [9:0]		RAM_addr_wr;
+	reg [15:0]		FIFO_data_in;   // internal data word (wired to data_out)
+	reg				FIFO_write_to;  // internal valid pulse (wired to data_valid)
+
+	assign data_out   = FIFO_data_in;
+	assign data_valid = FIFO_write_to;
+
+	localparam [9:0]  RAM_addr_wr    = 10'd0;
 	reg [9:0]		RAM_addr_rd;
-	wire [3:0]		RAM_bank_sel_wr;
+	localparam [3:0]  RAM_bank_sel_wr = 4'd0;
 	reg [3:0]		RAM_bank_sel_rd;
-	wire [15:0]		RAM_data_in;
+	localparam [15:0] RAM_data_in     = 16'd0;
 	wire [15:0]		RAM_data_out_1_pre, RAM_data_out_2_pre, RAM_data_out_3_pre;
 	reg [15:0]		RAM_data_out_1, RAM_data_out_2, RAM_data_out_3;
-	wire				RAM_we_1, RAM_we_2, RAM_we_3;
+	localparam		RAM_we_1 = 1'b0, RAM_we_2 = 1'b0, RAM_we_3 = 1'b0;
 		
 	reg [5:0] 		channel, channel_MISO;  // varies from 0-34 (amplfier channels 0-31, plus 3 auxiliary commands)
 	reg [15:0] 		MOSI_cmd_A, MOSI_cmd_B, MOSI_cmd_C, MOSI_cmd_D;
@@ -302,8 +236,8 @@ module main #(
 	wire [15:0] 	in_DDR_C1, in_DDR_C2;
 	wire [15:0] 	in_DDR_D1, in_DDR_D2;
 	
-	wire [3:0] 		delay_A, delay_B, delay_C, delay_D;
-	
+	localparam [3:0] delay_A = 4'd0, delay_B = 4'd0, delay_C = 4'd0, delay_D = 4'd0;
+
 	reg [15:0] 		result_A1, result_A2;
 	reg [15:0] 		result_B1, result_B2;
 	reg [15:0] 		result_C1, result_C2;
@@ -313,9 +247,9 @@ module main #(
 	reg [15:0] 		result_DDR_C1, result_DDR_C2;
 	reg [15:0] 		result_DDR_D1, result_DDR_D2;
 
-	reg [31:0] 		timestamp;			 
+	reg [31:0] 		timestamp;
 	reg [31:0]		max_timestep;
-	wire [31:0]		max_timestep_in;
+	localparam [31:0] max_timestep_in = 32'd0;   // run forever
 	wire [31:0] 	data_stream_timestamp;
 	wire [63:0]		header_magic_number;
 	wire [15:0]		data_stream_filler;
@@ -324,66 +258,77 @@ module main #(
 	reg [15:0]		data_stream_5, data_stream_6, data_stream_7, data_stream_8;
 	reg [3:0]		data_stream_1_sel, data_stream_2_sel, data_stream_3_sel, data_stream_4_sel;
 	reg [3:0]		data_stream_5_sel, data_stream_6_sel, data_stream_7_sel, data_stream_8_sel;
-	wire [3:0]		data_stream_1_sel_in, data_stream_2_sel_in, data_stream_3_sel_in, data_stream_4_sel_in;
-	wire [3:0]		data_stream_5_sel_in, data_stream_6_sel_in, data_stream_7_sel_in, data_stream_8_sel_in;
+	localparam [3:0] data_stream_1_sel_in = 4'd0,  data_stream_2_sel_in = 4'd1;
+	localparam [3:0] data_stream_3_sel_in = 4'd2,  data_stream_4_sel_in = 4'd3;
+	localparam [3:0] data_stream_5_sel_in = 4'd4,  data_stream_6_sel_in = 4'd5;
+	localparam [3:0] data_stream_7_sel_in = 4'd6,  data_stream_8_sel_in = 4'd7;
 	reg				data_stream_1_en, data_stream_2_en, data_stream_3_en, data_stream_4_en;
 	reg				data_stream_5_en, data_stream_6_en, data_stream_7_en, data_stream_8_en;
-	wire				data_stream_1_en_in, data_stream_2_en_in, data_stream_3_en_in, data_stream_4_en_in;
-	wire				data_stream_5_en_in, data_stream_6_en_in, data_stream_7_en_in, data_stream_8_en_in;
+	localparam		data_stream_1_en_in = 1'b1, data_stream_2_en_in = 1'b1;
+	localparam		data_stream_3_en_in = 1'b1, data_stream_4_en_in = 1'b1;
+	localparam		data_stream_5_en_in = 1'b1, data_stream_6_en_in = 1'b1;
+	localparam		data_stream_7_en_in = 1'b1, data_stream_8_en_in = 1'b1;
 	
 	reg [15:0]		data_stream_TTL_in, data_stream_TTL_out;
 	wire [15:0]		data_stream_ADC_1, data_stream_ADC_2, data_stream_ADC_3, data_stream_ADC_4;
 	wire [15:0]		data_stream_ADC_5, data_stream_ADC_6, data_stream_ADC_7, data_stream_ADC_8;
 	
-	wire				TTL_out_mode;
+	localparam		TTL_out_mode = 1'b0;
 	reg [15:0]		TTL_out_user;
 	
-	wire				reset, SPI_start, SPI_run_continuous;
+	localparam		SPI_start = 1'b1;
+	localparam		SPI_run_continuous = 1'b1;
 	reg				SPI_running;
 
-	wire [8:0]		dataclk_M, dataclk_D;
-	wire				DCM_prog_trigger;
-	wire           DSP_settle;
+	localparam [8:0] dataclk_M = 9'd42, dataclk_D = 9'd25;  // unused; MMCM is fixed
+	localparam		DSP_settle = 1'b0;
 
 	wire [15:0] 	MOSI_cmd_selected_A, MOSI_cmd_selected_B, MOSI_cmd_selected_C, MOSI_cmd_selected_D;
 
 	reg [15:0] 		aux_cmd_A, aux_cmd_B, aux_cmd_C, aux_cmd_D;
 	reg [9:0] 		aux_cmd_index_1, aux_cmd_index_2, aux_cmd_index_3;
-	wire [9:0] 		max_aux_cmd_index_1_in, max_aux_cmd_index_2_in, max_aux_cmd_index_3_in;
+	localparam [9:0] max_aux_cmd_index_1_in = 10'd0, max_aux_cmd_index_2_in = 10'd0, max_aux_cmd_index_3_in = 10'd0;
 	reg [9:0] 		max_aux_cmd_index_1, max_aux_cmd_index_2, max_aux_cmd_index_3;
 	reg [9:0]		loop_aux_cmd_index_1, loop_aux_cmd_index_2, loop_aux_cmd_index_3;
 
-	wire [3:0] 		aux_cmd_bank_1_A_in, aux_cmd_bank_1_B_in, aux_cmd_bank_1_C_in, aux_cmd_bank_1_D_in;
-	wire [3:0] 		aux_cmd_bank_2_A_in, aux_cmd_bank_2_B_in, aux_cmd_bank_2_C_in, aux_cmd_bank_2_D_in;
-	wire [3:0] 		aux_cmd_bank_3_A_in, aux_cmd_bank_3_B_in, aux_cmd_bank_3_C_in, aux_cmd_bank_3_D_in;
+	localparam [3:0] aux_cmd_bank_1_A_in = 4'd0, aux_cmd_bank_1_B_in = 4'd0;
+	localparam [3:0] aux_cmd_bank_1_C_in = 4'd0, aux_cmd_bank_1_D_in = 4'd0;
+	localparam [3:0] aux_cmd_bank_2_A_in = 4'd0, aux_cmd_bank_2_B_in = 4'd0;
+	localparam [3:0] aux_cmd_bank_2_C_in = 4'd0, aux_cmd_bank_2_D_in = 4'd0;
+	localparam [3:0] aux_cmd_bank_3_A_in = 4'd0, aux_cmd_bank_3_B_in = 4'd0;
+	localparam [3:0] aux_cmd_bank_3_C_in = 4'd0, aux_cmd_bank_3_D_in = 4'd0;
 	reg [3:0] 		aux_cmd_bank_1_A, aux_cmd_bank_1_B, aux_cmd_bank_1_C, aux_cmd_bank_1_D;
 	reg [3:0] 		aux_cmd_bank_2_A, aux_cmd_bank_2_B, aux_cmd_bank_2_C, aux_cmd_bank_2_D;
 	reg [3:0] 		aux_cmd_bank_3_A, aux_cmd_bank_3_B, aux_cmd_bank_3_C, aux_cmd_bank_3_D;
 
-	wire [4:0] 		DAC_channel_sel_1, DAC_channel_sel_2, DAC_channel_sel_3, DAC_channel_sel_4;
-	wire [4:0] 		DAC_channel_sel_5, DAC_channel_sel_6, DAC_channel_sel_7, DAC_channel_sel_8;
-	wire [3:0] 		DAC_stream_sel_1, DAC_stream_sel_2, DAC_stream_sel_3, DAC_stream_sel_4;
-	wire [3:0] 		DAC_stream_sel_5, DAC_stream_sel_6, DAC_stream_sel_7, DAC_stream_sel_8;
-	wire 				DAC_en_1, DAC_en_2, DAC_en_3, DAC_en_4;
-	wire 				DAC_en_5, DAC_en_6, DAC_en_7, DAC_en_8;
+	localparam [4:0] DAC_channel_sel_1 = 5'd0, DAC_channel_sel_2 = 5'd0;
+	localparam [4:0] DAC_channel_sel_3 = 5'd0, DAC_channel_sel_4 = 5'd0;
+	localparam [4:0] DAC_channel_sel_5 = 5'd0, DAC_channel_sel_6 = 5'd0;
+	localparam [4:0] DAC_channel_sel_7 = 5'd0, DAC_channel_sel_8 = 5'd0;
+	localparam [3:0] DAC_stream_sel_1 = 4'd0, DAC_stream_sel_2 = 4'd0;
+	localparam [3:0] DAC_stream_sel_3 = 4'd0, DAC_stream_sel_4 = 4'd0;
+	localparam [3:0] DAC_stream_sel_5 = 4'd0, DAC_stream_sel_6 = 4'd0;
+	localparam [3:0] DAC_stream_sel_7 = 4'd0, DAC_stream_sel_8 = 4'd0;
+	localparam		DAC_en_1 = 1'b0, DAC_en_2 = 1'b0, DAC_en_3 = 1'b0, DAC_en_4 = 1'b0;
+	localparam		DAC_en_5 = 1'b0, DAC_en_6 = 1'b0, DAC_en_7 = 1'b0, DAC_en_8 = 1'b0;
 	reg [15:0]		DAC_pre_register_1, DAC_pre_register_2, DAC_pre_register_3, DAC_pre_register_4;
 	reg [15:0]		DAC_pre_register_5, DAC_pre_register_6, DAC_pre_register_7, DAC_pre_register_8;
 	reg [15:0]		DAC_register_1, DAC_register_2, DAC_register_3, DAC_register_4;
 	reg [15:0]		DAC_register_5, DAC_register_6, DAC_register_7, DAC_register_8;
 
 	reg [15:0]		DAC_manual;
-	wire [6:0]     DAC_noise_suppress;
-	wire [2:0]		DAC_gain;
+	localparam [6:0] DAC_noise_suppress = 7'd0;
+	localparam [2:0] DAC_gain = 3'd0;
 	
 	reg [15:0]		DAC_thresh_1, DAC_thresh_2, DAC_thresh_3, DAC_thresh_4;
 	reg [15:0]		DAC_thresh_5, DAC_thresh_6, DAC_thresh_7, DAC_thresh_8;
 	reg				DAC_thresh_pol_1, DAC_thresh_pol_2, DAC_thresh_pol_3, DAC_thresh_pol_4;
 	reg				DAC_thresh_pol_5, DAC_thresh_pol_6, DAC_thresh_pol_7, DAC_thresh_pol_8;
 	wire [7:0]		DAC_thresh_out;
-	
+
 	reg				HPF_en;
 	reg [15:0]		HPF_coefficient;
-	
+
 	reg				external_fast_settle_enable;
 	reg [3:0]		external_fast_settle_channel;
 	reg				external_fast_settle, external_fast_settle_prev;
@@ -391,484 +336,38 @@ module main #(
 	reg				external_digout_enable_A, external_digout_enable_B, external_digout_enable_C, external_digout_enable_D;
 	reg [3:0]		external_digout_channel_A, external_digout_channel_B, external_digout_channel_C, external_digout_channel_D;
 	reg				external_digout_A, external_digout_B, external_digout_C, external_digout_D;
-	
-	wire [7:0]		led_in;
-	
-	//Open-Ephys specific registers
-	reg				ledsEnabled;
-	reg [15:0]   	sync_divide;
-	reg				sample_clk;
 
-	// Opal Kelly USB Host Interface
-	
-	wire        ti_clk;		// 48 MHz clock from Opal Kelly USB interface
-	wire [30:0] ok1;
-	wire [16:0] ok2;
-
-	wire [15:0] ep00wirein, ep01wirein, ep02wirein, ep03wirein, ep04wirein, ep05wirein, ep06wirein, ep07wirein;
-	wire [15:0] ep08wirein, ep09wirein, ep0awirein, ep0bwirein, ep0cwirein, ep0dwirein, ep0ewirein, ep0fwirein;
-	wire [15:0] ep10wirein, ep11wirein, ep12wirein, ep13wirein, ep14wirein, ep15wirein, ep16wirein, ep17wirein;
-	wire [15:0] ep18wirein, ep19wirein, ep1awirein, ep1bwirein, ep1cwirein, ep1dwirein, ep1ewirein, ep1fwirein;
-
-	wire [15:0] ep20wireout, ep21wireout, ep22wireout, ep23wireout, ep24wireout, ep25wireout, ep26wireout, ep27wireout;
-	wire [15:0] ep28wireout, ep29wireout, ep2awireout, ep2bwireout, ep2cwireout, ep2dwireout, ep2ewireout, ep2fwireout;
-	wire [15:0] ep30wireout, ep31wireout, ep32wireout, ep33wireout, ep34wireout, ep35wireout, ep36wireout, ep37wireout;
-	wire [15:0] ep38wireout, ep39wireout, ep3awireout, ep3bwireout, ep3cwireout, ep3dwireout, ep3ewireout, ep3fwireout;
-
-	wire [15:0] ep40trigin, ep41trigin, ep42trigin, ep43trigin, ep44trigin, ep45trigin, ep46trigin, ep5atrigin;
+	localparam [7:0] led_in = 8'b0;
 
 
-	// USB WireIn inputs
-
-	assign reset = 						ep00wirein[0];
-	assign SPI_run_continuous = 		ep00wirein[1];
-	assign DSP_settle =     			ep00wirein[2];
-	assign TTL_out_mode = 				ep00wirein[3];
-	assign DAC_noise_suppress = 		ep00wirein[12:6];
-	assign DAC_gain = 					ep00wirein[15:13];
-
-	assign max_timestep_in[15:0] = 	ep01wirein;
-	assign max_timestep_in[31:16] =	ep02wirein;
+		// Control defaults (previously driven by Opal Kelly USB wire-ins/triggers)
 
 	always @(posedge dataclk) begin
 		max_timestep <= max_timestep_in;
 	end
 
-	assign dataclk_M = 					{ 1'b0, ep03wirein[15:8] };
-	assign dataclk_D = 					{ 1'b0, ep03wirein[7:0] };
-
-	assign delay_A = 						ep04wirein[3:0];
-	assign delay_B = 						ep04wirein[7:4];
-	assign delay_C = 						ep04wirein[11:8];
-	assign delay_D = 						ep04wirein[15:12];
-	
-	assign RAM_addr_wr = 				ep05wirein[9:0];
-	assign RAM_bank_sel_wr = 			ep06wirein[3:0];	
-	assign RAM_data_in = 				ep07wirein;
-
-	assign aux_cmd_bank_1_A_in = 		ep08wirein[3:0];
-	assign aux_cmd_bank_1_B_in = 		ep08wirein[7:4];
-	assign aux_cmd_bank_1_C_in = 		ep08wirein[11:8];
-	assign aux_cmd_bank_1_D_in = 		ep08wirein[15:12];
-
-	assign aux_cmd_bank_2_A_in = 		ep09wirein[3:0];
-	assign aux_cmd_bank_2_B_in = 		ep09wirein[7:4];
-	assign aux_cmd_bank_2_C_in = 		ep09wirein[11:8];
-	assign aux_cmd_bank_2_D_in = 		ep09wirein[15:12];
-
-	assign aux_cmd_bank_3_A_in = 		ep0awirein[3:0];
-	assign aux_cmd_bank_3_B_in = 		ep0awirein[7:4];
-	assign aux_cmd_bank_3_C_in = 		ep0awirein[11:8];
-	assign aux_cmd_bank_3_D_in = 		ep0awirein[15:12];
-		
-	assign max_aux_cmd_index_1_in = 	ep0bwirein[9:0];
-	assign max_aux_cmd_index_2_in = 	ep0cwirein[9:0];
-	assign max_aux_cmd_index_3_in = 	ep0dwirein[9:0];
-
-	always @(posedge dataclk) begin
-		loop_aux_cmd_index_1 <=			ep0ewirein[9:0];
-		loop_aux_cmd_index_2 <=			ep0fwirein[9:0];
-		loop_aux_cmd_index_3 <=			ep10wirein[9:0];
-	end
-
-	assign led_in =  		   			ep11wirein[7:0];
-
-	assign data_stream_1_sel_in = 	ep12wirein[3:0];
-	assign data_stream_2_sel_in = 	ep12wirein[7:4];
-	assign data_stream_3_sel_in = 	ep12wirein[11:8];
-	assign data_stream_4_sel_in = 	ep12wirein[15:12];
-	assign data_stream_5_sel_in = 	ep13wirein[3:0];
-	assign data_stream_6_sel_in = 	ep13wirein[7:4];
-	assign data_stream_7_sel_in = 	ep13wirein[11:8];
-	assign data_stream_8_sel_in = 	ep13wirein[15:12];
-
-   assign data_stream_1_en_in = 		ep14wirein[0];
-   assign data_stream_2_en_in = 		ep14wirein[1];
-   assign data_stream_3_en_in = 		ep14wirein[2];
-   assign data_stream_4_en_in = 		ep14wirein[3];
-   assign data_stream_5_en_in = 		ep14wirein[4];
-   assign data_stream_6_en_in = 		ep14wirein[5];
-   assign data_stream_7_en_in = 		ep14wirein[6];
-   assign data_stream_8_en_in = 		ep14wirein[7];
-
-	always @(posedge dataclk) begin
-		TTL_out_user <= 					ep15wirein;
-	end
-		
 	assign TTL_out = TTL_out_mode ? {TTL_out_user[15:8], DAC_thresh_out} : TTL_out_user;
-		
-	assign DAC_channel_sel_1 = 		ep16wirein[4:0];
-	assign DAC_stream_sel_1 = 			ep16wirein[8:5];
-	assign DAC_en_1 = 					ep16wirein[9];
-	
-	assign DAC_channel_sel_2 = 		ep17wirein[4:0];
-	assign DAC_stream_sel_2 = 			ep17wirein[8:5];
-	assign DAC_en_2 = 					ep17wirein[9];
-	
-	assign DAC_channel_sel_3 = 		ep18wirein[4:0];
-	assign DAC_stream_sel_3 = 			ep18wirein[8:5];
-	assign DAC_en_3 = 					ep18wirein[9];
-	
-	assign DAC_channel_sel_4 = 		ep19wirein[4:0];
-	assign DAC_stream_sel_4 = 			ep19wirein[8:5];
-	assign DAC_en_4 = 					ep19wirein[9];
-	
-	assign DAC_channel_sel_5 = 		ep1awirein[4:0];
-	assign DAC_stream_sel_5 = 			ep1awirein[8:5];
-	assign DAC_en_5 = 					ep1awirein[9];
-	
-	assign DAC_channel_sel_6 = 		ep1bwirein[4:0];
-	assign DAC_stream_sel_6 = 			ep1bwirein[8:5];
-	assign DAC_en_6 = 					ep1bwirein[9];
-	
-	assign DAC_channel_sel_7 = 		ep1cwirein[4:0];
-	assign DAC_stream_sel_7 = 			ep1cwirein[8:5];
-	assign DAC_en_7 = 					ep1cwirein[9];
-	
-	assign DAC_channel_sel_8 = 		ep1dwirein[4:0];
-	assign DAC_stream_sel_8 = 			ep1dwirein[8:5];
-	assign DAC_en_8 = 					ep1dwirein[9];
-	
-	always @(posedge dataclk) begin
-		DAC_manual <= 						ep1ewirein;
-	end
-
-	
-	// USB TriggerIn inputs
-
-	assign DCM_prog_trigger = 			ep40trigin[0];
-	
-	assign SPI_start = 					ep41trigin[0];
-
-	assign RAM_we_1 = 					ep42trigin[0];
-	assign RAM_we_2 = 					ep42trigin[1];
-	assign RAM_we_3 = 					ep42trigin[2];
-
-	always @(posedge ep43trigin[0]) begin
-		DAC_thresh_1 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[1]) begin
-		DAC_thresh_2 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[2]) begin
-		DAC_thresh_3 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[3]) begin
-		DAC_thresh_4 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[4]) begin
-		DAC_thresh_5 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[5]) begin
-		DAC_thresh_6 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[6]) begin
-		DAC_thresh_7 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[7]) begin
-		DAC_thresh_8 <= 					ep1fwirein;
-	end
-	always @(posedge ep43trigin[8]) begin
-		DAC_thresh_pol_1 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[9]) begin
-		DAC_thresh_pol_2 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[10]) begin
-		DAC_thresh_pol_3 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[11]) begin
-		DAC_thresh_pol_4 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[12]) begin
-		DAC_thresh_pol_5 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[13]) begin
-		DAC_thresh_pol_6 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[14]) begin
-		DAC_thresh_pol_7 <= 				ep1fwirein[0];
-	end
-	always @(posedge ep43trigin[15]) begin
-		DAC_thresh_pol_8 <= 				ep1fwirein[0];
-	end
-
-	always @(posedge ep44trigin[0]) begin
-		HPF_en <=							ep1fwirein[0];
-	end
-	always @(posedge ep44trigin[1]) begin
-		HPF_coefficient <=				ep1fwirein;
-	end
-	
-	always @(posedge ep45trigin[0]) begin
-		external_fast_settle_enable <=	ep1fwirein[0];
-	end
-	always @(posedge ep45trigin[1]) begin
-		external_fast_settle_channel <=	ep1fwirein[3:0];
-	end
-
-	always @(posedge ep46trigin[0]) begin
-		external_digout_enable_A <=	ep1fwirein[0];
-	end
-	always @(posedge ep46trigin[1]) begin
-		external_digout_enable_B <=	ep1fwirein[0];
-	end
-	always @(posedge ep46trigin[2]) begin
-		external_digout_enable_C <=	ep1fwirein[0];
-	end
-	always @(posedge ep46trigin[3]) begin
-		external_digout_enable_D <=	ep1fwirein[0];
-	end
-	always @(posedge ep46trigin[4]) begin
-		external_digout_channel_A <=	ep1fwirein[3:0];
-	end
-	always @(posedge ep46trigin[5]) begin
-		external_digout_channel_B <=	ep1fwirein[3:0];
-	end
-	always @(posedge ep46trigin[6]) begin
-		external_digout_channel_C <=	ep1fwirein[3:0];
-	end
-	always @(posedge ep46trigin[7]) begin
-		external_digout_channel_D <=	ep1fwirein[3:0];
-	end
-	//Open-ephys triggers
-	always @(posedge ep5atrigin[0] or posedge reset) begin
-		if (reset) begin
-			ledsEnabled <= 1'b1;
-		end else begin
-			ledsEnabled <=	ep1fwirein[0];
-		end
-	end
-	
-	always @(posedge ep5atrigin[1] or posedge reset) begin
-		if (reset) begin
-			sync_divide <= 15'b0;
-		end else begin
-			sync_divide <=	ep1fwirein[15:0];
-		end
-	end
-
-	// USB WireOut outputs
-
-	assign ep20wireout = 				num_words_in_FIFO[15:0];
-	assign ep21wireout = 				num_words_in_FIFO[31:16];
-	
-	assign ep22wireout = 				{ 15'b0, SPI_running };
-		
-	assign ep23wireout = 				TTL_in;
-	
-	assign ep24wireout = 				{ 14'b0, DCM_prog_done, dataclk_locked };
-	
-	assign ep25wireout = 				{ 12'b0, board_mode };
-	
-
-	// Unused; future expansion
-	assign ep26wireout = 				16'h0000;
-	assign ep27wireout = 				16'h0000;
-	assign ep28wireout = 				16'h0000;
-	assign ep29wireout = 				16'h0000;
-	assign ep2awireout = 				16'h0000;
-	assign ep2bwireout = 				16'h0000;
-	assign ep2cwireout = 				16'h0000;
-	assign ep2dwireout = 				16'h0000;
-	assign ep2ewireout = 				16'h0000;
-	assign ep2fwireout = 				16'h0000;
-	assign ep30wireout = 				16'h0000;
-	assign ep31wireout = 				16'h0000;
-	assign ep32wireout = 				16'h0000;
-	assign ep33wireout = 				16'h0000;
-	assign ep34wireout = 				16'h0000;
-	assign ep35wireout = 				16'h0000;
-	assign ep36wireout = 				16'h0000;
-	assign ep37wireout = 				16'h0000;
-	assign ep38wireout = 				16'h0000;
-	assign ep39wireout = 				16'h0000;
-	assign ep3awireout = 				16'h0000;
-	assign ep3bwireout = 				16'h0000;
-	assign ep3cwireout = 				16'h0000;
-	assign ep3dwireout = 				16'h0000;
-	
-	assign ep3ewireout = 				BOARD_ID;
-	assign ep3fwireout = 				BOARD_VERSION;
 	
 	
-	// Open-ephys board status LEDs
-	//assign LED_OUT = 				1'b0; // use to set to 0
-	
-	wire [23:0] ledA, ledB, ledC, ledD;
-	wire [23:0] ledTTLin, ledTTLout, ledADC, ledDAC;
-	
-	LED_status LED_colors(
-		.dataclk(dataclk),
-		.sampleclk(sample_clk),
-		.reset(reset),
-		.running(SPI_running),
-		
-		.stream_1_en(data_stream_1_en),
-		.stream_2_en(data_stream_2_en),
-		.stream_3_en(data_stream_3_en),
-		.stream_4_en(data_stream_4_en),
-		.stream_5_en(data_stream_5_en),
-		.stream_6_en(data_stream_6_en),
-		.stream_7_en(data_stream_7_en),
-		.stream_8_en(data_stream_8_en),
-		.stream_9_en(data_stream_9_en),
-		.stream_10_en(data_stream_10_en),
-		.stream_11_en(data_stream_11_en),
-		.stream_12_en(data_stream_12_en),
-		.stream_13_en(data_stream_13_en),
-		.stream_14_en(data_stream_14_en),
-		.stream_15_en(data_stream_15_en),
-		.stream_16_en(data_stream_16_en),
-		
-		.stream_1_sel(data_stream_1_sel),
-		.stream_2_sel(data_stream_2_sel),
-		.stream_3_sel(data_stream_3_sel),
-		.stream_4_sel(data_stream_4_sel),
-		.stream_5_sel(data_stream_5_sel),
-		.stream_6_sel(data_stream_6_sel),
-		.stream_7_sel(data_stream_7_sel),
-		.stream_8_sel(data_stream_8_sel),
-		.stream_9_sel(data_stream_9_sel),
-		.stream_10_sel(data_stream_10_sel),
-		.stream_11_sel(data_stream_11_sel),
-		.stream_12_sel(data_stream_12_sel),
-		.stream_13_sel(data_stream_13_sel),
-		.stream_14_sel(data_stream_14_sel),
-		.stream_15_sel(data_stream_15_sel),
-		.stream_16_sel(data_stream_16_sel),
-		
-		.DAC_en_array({DAC_en_1, DAC_en_2, DAC_en_3, DAC_en_4, DAC_en_5, DAC_en_6, DAC_en_7, DAC_en_8}),
-		
-		.TTL_in(TTL_in[7:0]),
-		
-		.ADC_1(data_stream_ADC_1),
-		.ADC_2(data_stream_ADC_2),
-		.ADC_3(data_stream_ADC_3),
-		.ADC_4(data_stream_ADC_4),
-		.ADC_5(data_stream_ADC_5),
-		.ADC_6(data_stream_ADC_6),
-		.ADC_7(data_stream_ADC_7),
-		.ADC_8(data_stream_ADC_8),
-		
-		.ledA(ledA),
-		.ledB(ledB),
-		.ledC(ledC),
-		.ledD(ledD),
-		.ledTTLin(ledTTLin),
-		.ledTTLout(ledTTLout),
-		.ledADC(ledADC),
-		.ledDAC(ledDAC)
-		
-	);
-	
-	// led controller for 
-	// format is 24 bit red,blue,green, least? significant bit first color cor current led
-   LED_controller WS2812controller(
-    .dat_out(LED_OUT), // output to led string
-    .reset(reset), 
-    .clk(clk1),  // 100MHz clock 
-	 .enable(ledsEnabled),
-	 .led1(ledD), // 4 SPI cable status LEDs
-    .led2(ledC), 
-    .led3(ledB), 
-    .led4(ledA), 
-    .led5(ledTTLin),  // TTL in
-    .led6(ledTTLout),  // TTL out
-    .led7(ledADC), // Ain  
-    //.led8({DAC_register_1,DAC_register_2,8'b00000000}) //Aout
-	 .led8(ledDAC)
-	);
-	
-	// Open-ephys clock divider
-	freqdiv sample_clock_div(
-	 .N(sync_divide),
-	 .out(sync),
-	 .clk(sample_clk),
-    .reset(reset)
-	 );
-
 	// 8-LED Display on Opal Kelly board
+	
 	assign led = ~{ led_in };
 	
 	
-	// Variable frequency data clock generator
-	
-	variable_freq_clk_generator #(
-		.M_DEFAULT     (42),		// default sample frequency = 30 kS/s/channel
-		.D_DEFAULT		(25)
-		)
-	variable_freq_clk_generator_inst
-		(
-		.clk1					(clk1),
-		.ti_clk				(ti_clk),
-		.reset				(reset),
-		.M						(dataclk_M),
-		.D						(dataclk_D),
-		.DCM_prog_trigger	(DCM_prog_trigger),
-		.clkout				(dataclk),
-		.DCM_prog_done		(DCM_prog_done),
-		.locked				(dataclk_locked)
-		);
+	// SPI clock generator (fixed 84 MHz → 30 kS/s per channel)
 
-
-	// SDRAM FIFO that regulates data flow from Xilinx FPGA to USB interface
-	
-	SDRAM_FIFO  #(
-		.C3_P0_MASK_SIZE           (C3_P0_MASK_SIZE),
-		.C3_P0_DATA_PORT_SIZE      (C3_P0_DATA_PORT_SIZE),
-		.C3_P1_MASK_SIZE           (C3_P1_MASK_SIZE),
-		.C3_P1_DATA_PORT_SIZE      (C3_P1_DATA_PORT_SIZE),
-		.DEBUG_EN                  (DEBUG_EN),       
-		.C3_MEMCLK_PERIOD          (C3_MEMCLK_PERIOD),       
-		.C3_CALIB_SOFT_IP          (C3_CALIB_SOFT_IP),       
-		.C3_SIMULATION             (C3_SIMULATION),       
-		.C3_HW_TESTING             (C3_HW_TESTING),       
-		.C3_RST_ACT_LOW            (C3_RST_ACT_LOW),       
-		.C3_INPUT_CLK_TYPE         (C3_INPUT_CLK_TYPE),       
-		.C3_MEM_ADDR_ORDER         (C3_MEM_ADDR_ORDER),       
-		.C3_NUM_DQ_PINS            (C3_NUM_DQ_PINS),       
-		.C3_MEM_ADDR_WIDTH         (C3_MEM_ADDR_WIDTH),       
-		.C3_MEM_BANKADDR_WIDTH     (C3_MEM_BANKADDR_WIDTH)
-		)
-	SDRAM_FIFO_inst
-		(
-		.ti_clk							(ti_clk),
-		.data_in_clk					(dataclk),
-		.clk1_in							(clk1_in),
-		.clk1_out						(clk1),
-		.reset							(reset),
-		.FIFO_write_to					(FIFO_write_to),
-		.FIFO_data_in					(FIFO_data_in),
-		.FIFO_read_from				(FIFO_read_from),
-		.FIFO_data_out					(FIFO_data_out),
-		.num_words_in_FIFO			(num_words_in_FIFO),
-		.mcb3_dram_dq					(mcb3_dram_dq),
-		.mcb3_dram_a					(mcb3_dram_a),
-		.mcb3_dram_ba					(mcb3_dram_ba),
-		.mcb3_dram_ras_n				(mcb3_dram_ras_n),
-		.mcb3_dram_cas_n				(mcb3_dram_cas_n),
-		.mcb3_dram_we_n				(mcb3_dram_we_n),
-		.mcb3_dram_odt					(mcb3_dram_odt),
-		.mcb3_dram_cke					(mcb3_dram_cke),
-		.mcb3_dram_dm					(mcb3_dram_dm),
-		.mcb3_dram_udqs				(mcb3_dram_udqs),
-		.mcb3_dram_udqs_n				(mcb3_dram_udqs_n),
-		.mcb3_rzq						(mcb3_rzq),
-		.mcb3_zio						(mcb3_zio),
-		.mcb3_dram_udm					(mcb3_dram_udm),
-		.mcb3_dram_dqs					(mcb3_dram_dqs),
-		.mcb3_dram_dqs_n				(mcb3_dram_dqs_n),
-		.mcb3_dram_ck					(mcb3_dram_ck),
-		.mcb3_dram_ck_n				(mcb3_dram_ck_n),
-		.mcb3_dram_cs_n				(mcb3_dram_cs_n)
-		);
+	variable_freq_clk_generator variable_freq_clk_generator_inst (
+		.clk1   (clk1),
+		.reset  (reset),
+		.clkout (dataclk),
+		.locked (dataclk_locked)
+	);
 
 	
 	// MOSI auxiliary command sequence RAM banks
 
 	RAM_bank RAM_bank_1(
-		.clk_A(ti_clk),
+		.clk_A(clk1_in),
 		.clk_B(dataclk),
 		.RAM_bank_sel_A(RAM_bank_sel_wr),
 		.RAM_bank_sel_B(RAM_bank_sel_rd),
@@ -903,7 +402,7 @@ module main #(
 	end
 
 	RAM_bank RAM_bank_2(
-		.clk_A(ti_clk),
+		.clk_A(clk1_in),
 		.clk_B(dataclk),
 		.RAM_bank_sel_A(RAM_bank_sel_wr),
 		.RAM_bank_sel_B(RAM_bank_sel_rd),
@@ -925,7 +424,7 @@ module main #(
 	end
 	
 	RAM_bank RAM_bank_3(
-		.clk_A(ti_clk),
+		.clk_A(clk1_in),
 		.clk_B(dataclk),
 		.RAM_bank_sel_A(RAM_bank_sel_wr),
 		.RAM_bank_sel_B(RAM_bank_sel_rd),
@@ -2870,119 +2369,6 @@ module main #(
 		endcase
 	end
 	
-	// Opal Kelly USB I/O Host and Endpoint Modules
-	
-	okHost host (
-		.hi_in(hi_in),
-		.hi_out(hi_out),
-		.hi_inout(hi_inout),
-		.hi_aa(hi_aa),
-		.ti_clk(ti_clk),
-		.ok1(ok1), 
-		.ok2(ok2)
-		);
-		
-	wire [17*33-1:0] 	ok2x;
-	okWireOR # (.N(33)) wireOR (ok2, ok2x);
-
-	okWireIn     wi00 (.ok1(ok1),                            .ep_addr(8'h00), .ep_dataout(ep00wirein));
-	okWireIn     wi01 (.ok1(ok1),                            .ep_addr(8'h01), .ep_dataout(ep01wirein));
-	okWireIn     wi02 (.ok1(ok1),                            .ep_addr(8'h02), .ep_dataout(ep02wirein));
-	okWireIn     wi03 (.ok1(ok1),                            .ep_addr(8'h03), .ep_dataout(ep03wirein));
-	okWireIn     wi04 (.ok1(ok1),                            .ep_addr(8'h04), .ep_dataout(ep04wirein));
-	okWireIn     wi05 (.ok1(ok1),                            .ep_addr(8'h05), .ep_dataout(ep05wirein));
-	okWireIn     wi06 (.ok1(ok1),                            .ep_addr(8'h06), .ep_dataout(ep06wirein));
-	okWireIn     wi07 (.ok1(ok1),                            .ep_addr(8'h07), .ep_dataout(ep07wirein));
-	okWireIn     wi08 (.ok1(ok1),                            .ep_addr(8'h08), .ep_dataout(ep08wirein));
-	okWireIn     wi09 (.ok1(ok1),                            .ep_addr(8'h09), .ep_dataout(ep09wirein));
-	okWireIn     wi0a (.ok1(ok1),                            .ep_addr(8'h0a), .ep_dataout(ep0awirein));
-	okWireIn     wi0b (.ok1(ok1),                            .ep_addr(8'h0b), .ep_dataout(ep0bwirein));
-	okWireIn     wi0c (.ok1(ok1),                            .ep_addr(8'h0c), .ep_dataout(ep0cwirein));
-	okWireIn     wi0d (.ok1(ok1),                            .ep_addr(8'h0d), .ep_dataout(ep0dwirein));
-	okWireIn     wi0e (.ok1(ok1),                            .ep_addr(8'h0e), .ep_dataout(ep0ewirein));
-	okWireIn     wi0f (.ok1(ok1),                            .ep_addr(8'h0f), .ep_dataout(ep0fwirein));
-	okWireIn     wi10 (.ok1(ok1),                            .ep_addr(8'h10), .ep_dataout(ep10wirein));
-	okWireIn     wi11 (.ok1(ok1),                            .ep_addr(8'h11), .ep_dataout(ep11wirein));
-	okWireIn     wi12 (.ok1(ok1),                            .ep_addr(8'h12), .ep_dataout(ep12wirein));
-	okWireIn     wi13 (.ok1(ok1),                            .ep_addr(8'h13), .ep_dataout(ep13wirein));
-	okWireIn     wi14 (.ok1(ok1),                            .ep_addr(8'h14), .ep_dataout(ep14wirein));
-	okWireIn     wi15 (.ok1(ok1),                            .ep_addr(8'h15), .ep_dataout(ep15wirein));
-	okWireIn     wi16 (.ok1(ok1),                            .ep_addr(8'h16), .ep_dataout(ep16wirein));
-	okWireIn     wi17 (.ok1(ok1),                            .ep_addr(8'h17), .ep_dataout(ep17wirein));
-	okWireIn     wi18 (.ok1(ok1),                            .ep_addr(8'h18), .ep_dataout(ep18wirein));
-	okWireIn     wi19 (.ok1(ok1),                            .ep_addr(8'h19), .ep_dataout(ep19wirein));
-	okWireIn     wi1a (.ok1(ok1),                            .ep_addr(8'h1a), .ep_dataout(ep1awirein));
-	okWireIn     wi1b (.ok1(ok1),                            .ep_addr(8'h1b), .ep_dataout(ep1bwirein));
-	okWireIn     wi1c (.ok1(ok1),                            .ep_addr(8'h1c), .ep_dataout(ep1cwirein));
-	okWireIn     wi1d (.ok1(ok1),                            .ep_addr(8'h1d), .ep_dataout(ep1dwirein));
-	okWireIn     wi1e (.ok1(ok1),                            .ep_addr(8'h1e), .ep_dataout(ep1ewirein));
-	okWireIn     wi1f (.ok1(ok1),                            .ep_addr(8'h1f), .ep_dataout(ep1fwirein));
-	
-	okTriggerIn  ti40 (.ok1(ok1),                            .ep_addr(8'h40), .ep_clk(ti_clk),  .ep_trigger(ep40trigin));
-	okTriggerIn  ti41 (.ok1(ok1),                            .ep_addr(8'h41), .ep_clk(dataclk), .ep_trigger(ep41trigin));
-	okTriggerIn  ti42 (.ok1(ok1),                            .ep_addr(8'h42), .ep_clk(ti_clk),  .ep_trigger(ep42trigin));
-	okTriggerIn  ti43 (.ok1(ok1),                            .ep_addr(8'h43), .ep_clk(ti_clk),  .ep_trigger(ep43trigin));
-	okTriggerIn  ti44 (.ok1(ok1),                            .ep_addr(8'h44), .ep_clk(ti_clk),  .ep_trigger(ep44trigin));
-	okTriggerIn  ti45 (.ok1(ok1),                            .ep_addr(8'h45), .ep_clk(ti_clk),  .ep_trigger(ep45trigin));
-	okTriggerIn  ti46 (.ok1(ok1),                            .ep_addr(8'h46), .ep_clk(ti_clk),  .ep_trigger(ep46trigin));
-	okTriggerIn	 ti5a (.ok1(ok1),										.ep_addr(8'h5a), .ep_clk(ti_clk),  .ep_trigger(ep5atrigin));
-	
-	okWireOut    wo20 (.ok1(ok1), .ok2(ok2x[ 0*17 +: 17 ]),  .ep_addr(8'h20), .ep_datain(ep20wireout));
-	okWireOut    wo21 (.ok1(ok1), .ok2(ok2x[ 1*17 +: 17 ]),  .ep_addr(8'h21), .ep_datain(ep21wireout));
-	okWireOut    wo22 (.ok1(ok1), .ok2(ok2x[ 2*17 +: 17 ]),  .ep_addr(8'h22), .ep_datain(ep22wireout));
-	okWireOut    wo23 (.ok1(ok1), .ok2(ok2x[ 3*17 +: 17 ]),  .ep_addr(8'h23), .ep_datain(ep23wireout));
-	okWireOut    wo24 (.ok1(ok1), .ok2(ok2x[ 4*17 +: 17 ]),  .ep_addr(8'h24), .ep_datain(ep24wireout));
-	okWireOut    wo25 (.ok1(ok1), .ok2(ok2x[ 5*17 +: 17 ]),  .ep_addr(8'h25), .ep_datain(ep25wireout));
-	okWireOut    wo26 (.ok1(ok1), .ok2(ok2x[ 6*17 +: 17 ]),  .ep_addr(8'h26), .ep_datain(ep26wireout));
-	okWireOut    wo27 (.ok1(ok1), .ok2(ok2x[ 7*17 +: 17 ]),  .ep_addr(8'h27), .ep_datain(ep27wireout));
-	okWireOut    wo28 (.ok1(ok1), .ok2(ok2x[ 8*17 +: 17 ]),  .ep_addr(8'h28), .ep_datain(ep28wireout));
-	okWireOut    wo29 (.ok1(ok1), .ok2(ok2x[ 9*17 +: 17 ]),  .ep_addr(8'h29), .ep_datain(ep29wireout));
-	okWireOut    wo2a (.ok1(ok1), .ok2(ok2x[ 10*17 +: 17 ]), .ep_addr(8'h2a), .ep_datain(ep2awireout));
-	okWireOut    wo2b (.ok1(ok1), .ok2(ok2x[ 11*17 +: 17 ]), .ep_addr(8'h2b), .ep_datain(ep2bwireout));
-	okWireOut    wo2c (.ok1(ok1), .ok2(ok2x[ 12*17 +: 17 ]), .ep_addr(8'h2c), .ep_datain(ep2cwireout));
-	okWireOut    wo2d (.ok1(ok1), .ok2(ok2x[ 13*17 +: 17 ]), .ep_addr(8'h2d), .ep_datain(ep2dwireout));
-	okWireOut    wo2e (.ok1(ok1), .ok2(ok2x[ 14*17 +: 17 ]), .ep_addr(8'h2e), .ep_datain(ep2ewireout));
-	okWireOut    wo2f (.ok1(ok1), .ok2(ok2x[ 15*17 +: 17 ]), .ep_addr(8'h2f), .ep_datain(ep2fwireout));
-	okWireOut    wo30 (.ok1(ok1), .ok2(ok2x[ 16*17 +: 17 ]), .ep_addr(8'h30), .ep_datain(ep30wireout));
-	okWireOut    wo31 (.ok1(ok1), .ok2(ok2x[ 17*17 +: 17 ]), .ep_addr(8'h31), .ep_datain(ep31wireout));
-	okWireOut    wo32 (.ok1(ok1), .ok2(ok2x[ 18*17 +: 17 ]), .ep_addr(8'h32), .ep_datain(ep32wireout));
-	okWireOut    wo33 (.ok1(ok1), .ok2(ok2x[ 19*17 +: 17 ]), .ep_addr(8'h33), .ep_datain(ep33wireout));
-	okWireOut    wo34 (.ok1(ok1), .ok2(ok2x[ 20*17 +: 17 ]), .ep_addr(8'h34), .ep_datain(ep34wireout));
-	okWireOut    wo35 (.ok1(ok1), .ok2(ok2x[ 21*17 +: 17 ]), .ep_addr(8'h35), .ep_datain(ep35wireout));
-	okWireOut    wo36 (.ok1(ok1), .ok2(ok2x[ 22*17 +: 17 ]), .ep_addr(8'h36), .ep_datain(ep36wireout));
-	okWireOut    wo37 (.ok1(ok1), .ok2(ok2x[ 23*17 +: 17 ]), .ep_addr(8'h37), .ep_datain(ep37wireout));
-	okWireOut    wo38 (.ok1(ok1), .ok2(ok2x[ 24*17 +: 17 ]), .ep_addr(8'h38), .ep_datain(ep38wireout));
-	okWireOut    wo39 (.ok1(ok1), .ok2(ok2x[ 25*17 +: 17 ]), .ep_addr(8'h39), .ep_datain(ep39wireout));
-	okWireOut    wo3a (.ok1(ok1), .ok2(ok2x[ 26*17 +: 17 ]), .ep_addr(8'h3a), .ep_datain(ep3awireout));
-	okWireOut    wo3b (.ok1(ok1), .ok2(ok2x[ 27*17 +: 17 ]), .ep_addr(8'h3b), .ep_datain(ep3bwireout));
-	okWireOut    wo3c (.ok1(ok1), .ok2(ok2x[ 28*17 +: 17 ]), .ep_addr(8'h3c), .ep_datain(ep3cwireout));
-	okWireOut    wo3d (.ok1(ok1), .ok2(ok2x[ 29*17 +: 17 ]), .ep_addr(8'h3d), .ep_datain(ep3dwireout));
-	okWireOut    wo3e (.ok1(ok1), .ok2(ok2x[ 30*17 +: 17 ]), .ep_addr(8'h3e), .ep_datain(ep3ewireout));
-	okWireOut    wo3f (.ok1(ok1), .ok2(ok2x[ 31*17 +: 17 ]), .ep_addr(8'h3f), .ep_datain(ep3fwireout));
-	
-	okPipeOut    poa0 (.ok1(ok1), .ok2(ok2x[ 32*17 +: 17 ]), .ep_addr(8'ha0), .ep_read(FIFO_read_from), .ep_datain(FIFO_data_out));
-
-	//HARP sync module
-	
-	//cross-domain signal
-	reg [2:0] SPI_running_sync = 3'b000;
-	always @(posedge clk1 or posedge reset)
-	begin
-		if (reset)
-			SPI_running_sync = 3'b000;
-		else
-			SPI_running_sync = {SPI_running_sync[1:0], SPI_running};
-	end
-	
-	harp_sync #(
-		.CLK_HZ(100000000)
-	) harp (
-		 .clk(clk1),
-		 .reset(reset),
-		 .run(SPI_running_sync[2]),
-		 .TX(harp_tx),
-		 .LED(harp_led)
-	 );
 
 endmodule
 
