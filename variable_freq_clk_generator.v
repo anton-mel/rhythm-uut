@@ -4,7 +4,8 @@
 //
 // Design Name:  RHD2000 Rhythm Interface
 // Module Name:  variable_freq_clk_generator
-// Description:  Fixed-frequency SPI clock generator for Xilinx Zynq-7 (MMCME2_BASE).
+// Description:  Fixed-frequency SPI clock generator for Xilinx Artix-7 (MMCME2_BASE).
+//               Targets Opal Kelly XEM7310 (XC7A200T-1FBG484C, 100 MHz system clock).
 //               Output frequency = 100 MHz * CLKFBOUT_MULT_F / DIVCLK_DIVIDE / CLKOUT0_DIVIDE_F
 //
 //               Default: 84 MHz → 30 kS/s per channel
