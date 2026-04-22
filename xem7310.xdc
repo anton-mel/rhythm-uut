@@ -1,0 +1,105 @@
+# XDC Constraints for Opal Kelly XEM7310 (XC7A200T-1FBG484C)
+# RHD2000 Rhythm — XEM7310 port
+#
+# Pin locations for LVDS I/O depend on your specific PCB / expansion connector
+# wiring. Fill in the LOC values for your board before running synthesis.
+# Timing constraints are complete and correct.
+
+# ===========================================================================
+# Clock
+# ===========================================================================
+# 100 MHz on-board oscillator (single-ended, bank 16)
+set_property PACKAGE_PIN R4       [get_ports clk1_in]
+set_property IOSTANDARD  LVCMOS33 [get_ports clk1_in]
+create_clock -period 10.000 -name clk1_in [get_ports clk1_in]
+
+# ===========================================================================
+# Reset (active-high) — tie to a push-button or drive from logic
+# ===========================================================================
+# TODO: assign to a pin on your board
+# set_property PACKAGE_PIN <pin>   [get_ports reset]
+# set_property IOSTANDARD  LVCMOS33 [get_ports reset]
+
+# ===========================================================================
+# LEDs (8-bit, active-low on XEM7310 board LEDs)
+# ===========================================================================
+# TODO: assign to your board's LED pins
+# set_property PACKAGE_PIN <pin> [get_ports {led[0]}]
+# ...
+# set_property IOSTANDARD LVCMOS33 [get_ports led]
+
+# ===========================================================================
+# LVDS SPI — Port A
+# Replace each TODO pin with the correct ball from your PCB schematic.
+# All differential pairs use LVDS_25 at 2.5 V.
+# ===========================================================================
+# MISO A1
+# set_property PACKAGE_PIN <pin_p> [get_ports MISO_A1_p]
+# set_property PACKAGE_PIN <pin_n> [get_ports MISO_A1_n]
+# MISO A2
+# set_property PACKAGE_PIN <pin_p> [get_ports MISO_A2_p]
+# set_property PACKAGE_PIN <pin_n> [get_ports MISO_A2_n]
+# CS_b A
+# set_property PACKAGE_PIN <pin_p> [get_ports CS_b_A_p]
+# set_property PACKAGE_PIN <pin_n> [get_ports CS_b_A_n]
+# SCLK A
+# set_property PACKAGE_PIN <pin_p> [get_ports SCLK_A_p]
+# set_property PACKAGE_PIN <pin_n> [get_ports SCLK_A_n]
+# MOSI A
+# set_property PACKAGE_PIN <pin_p> [get_ports MOSI_A_p]
+# set_property PACKAGE_PIN <pin_n> [get_ports MOSI_A_n]
+
+# LVDS I/O standard for all differential SPI pairs
+# set_property IOSTANDARD LVDS_25 [get_ports {MISO_A1_p MISO_A1_n}]
+# set_property IOSTANDARD LVDS_25 [get_ports {MISO_A2_p MISO_A2_n}]
+# set_property IOSTANDARD LVDS_25 [get_ports {CS_b_A_p  CS_b_A_n }]
+# set_property IOSTANDARD LVDS_25 [get_ports {SCLK_A_p  SCLK_A_n }]
+# set_property IOSTANDARD LVDS_25 [get_ports {MOSI_A_p  MOSI_A_n }]
+
+# ===========================================================================
+# LVDS SPI — Port B
+# ===========================================================================
+# set_property PACKAGE_PIN <pin_p> [get_ports MISO_B1_p]  ...
+# (repeat pattern above for B, C, D ports)
+
+# ===========================================================================
+# TTL I/O
+# ===========================================================================
+# set_property PACKAGE_PIN <pin> [get_ports {TTL_in[0]}]
+# set_property IOSTANDARD LVCMOS33 [get_ports TTL_in]
+# set_property IOSTANDARD LVCMOS33 [get_ports TTL_out]
+
+# ===========================================================================
+# DAC SPI
+# ===========================================================================
+# set_property PACKAGE_PIN <pin> [get_ports DAC_SYNC]
+# set_property PACKAGE_PIN <pin> [get_ports DAC_SCLK]
+# set_property PACKAGE_PIN <pin> [get_ports DAC_DIN_1]
+# ... (DAC_DIN_2 through DAC_DIN_8)
+# set_property IOSTANDARD LVCMOS33 [get_ports DAC_SYNC]
+# set_property IOSTANDARD LVCMOS33 [get_ports DAC_SCLK]
+# set_property IOSTANDARD LVCMOS33 [get_ports {DAC_DIN_*}]
+
+# ===========================================================================
+# ADC SPI
+# ===========================================================================
+# set_property PACKAGE_PIN <pin> [get_ports ADC_CS]
+# set_property PACKAGE_PIN <pin> [get_ports ADC_SCLK]
+# set_property PACKAGE_PIN <pin> [get_ports ADC_DOUT_1]
+# ... (ADC_DOUT_2 through ADC_DOUT_8)
+# set_property IOSTANDARD LVCMOS33 [get_ports ADC_CS]
+# set_property IOSTANDARD LVCMOS33 [get_ports ADC_SCLK]
+# set_property IOSTANDARD LVCMOS33 [get_ports {ADC_DOUT_*}]
+
+# ===========================================================================
+# Board mode (4-bit strap)
+# ===========================================================================
+# set_property PACKAGE_PIN <pin> [get_ports {board_mode[0]}]
+# set_property IOSTANDARD LVCMOS33 [get_ports board_mode]
+
+# ===========================================================================
+# Timing exceptions
+# ===========================================================================
+# The dataclk (~84 MHz) is generated by the MMCM from clk1_in.
+# False path from reset (async assertion, sync deassertion in design).
+set_false_path -from [get_ports reset]

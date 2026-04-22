@@ -98,11 +98,114 @@ module MMCME2_BASE #(
 endmodule
 
 // ---------------------------------------------------------------------------
-// RAMB16BWER: Spartan-6 16k-bit dual-port block RAM behavioral model
-// Only the 18-bit data width mode (DATA_WIDTH_A/B = 18) is modeled here,
-// matching the usage in RAM_block.v:
-//   Port A: 10-bit addr (ADDRA[13:4]), 16-bit data write, WEA[1:0] active
-//   Port B: 10-bit addr (ADDRB[13:4]), 16-bit data read-only
+// RAMB18E1: Artix-7 18Kb true dual-port block RAM behavioral model.
+// Port A: 10-bit addr (ADDRA[13:4]), 16-bit data write, WEA[1:0] active.
+// Port B: 10-bit addr (ADDRB[13:4]), 16-bit data read-only.
+// ---------------------------------------------------------------------------
+module RAMB18E1 #(
+    parameter RAM_MODE           = "TDP",
+    parameter RDADDR_COLLISION_HWCONFIG = "DELAYED_WRITE",
+    parameter DOA_REG            = 0,
+    parameter DOB_REG            = 0,
+    parameter DATA_WIDTH_A       = 18,
+    parameter DATA_WIDTH_B       = 18,
+    parameter INIT_A             = 18'h0,
+    parameter INIT_B             = 18'h0,
+    parameter SRVAL_A            = 18'h0,
+    parameter SRVAL_B            = 18'h0,
+    parameter WRITE_MODE_A       = "WRITE_FIRST",
+    parameter WRITE_MODE_B       = "WRITE_FIRST",
+    parameter SIM_COLLISION_CHECK = "ALL",
+    parameter INIT_00 = 256'h0, parameter INIT_01 = 256'h0,
+    parameter INIT_02 = 256'h0, parameter INIT_03 = 256'h0,
+    parameter INIT_04 = 256'h0, parameter INIT_05 = 256'h0,
+    parameter INIT_06 = 256'h0, parameter INIT_07 = 256'h0,
+    parameter INIT_08 = 256'h0, parameter INIT_09 = 256'h0,
+    parameter INIT_0A = 256'h0, parameter INIT_0B = 256'h0,
+    parameter INIT_0C = 256'h0, parameter INIT_0D = 256'h0,
+    parameter INIT_0E = 256'h0, parameter INIT_0F = 256'h0,
+    parameter INIT_10 = 256'h0, parameter INIT_11 = 256'h0,
+    parameter INIT_12 = 256'h0, parameter INIT_13 = 256'h0,
+    parameter INIT_14 = 256'h0, parameter INIT_15 = 256'h0,
+    parameter INIT_16 = 256'h0, parameter INIT_17 = 256'h0,
+    parameter INIT_18 = 256'h0, parameter INIT_19 = 256'h0,
+    parameter INIT_1A = 256'h0, parameter INIT_1B = 256'h0,
+    parameter INIT_1C = 256'h0, parameter INIT_1D = 256'h0,
+    parameter INIT_1E = 256'h0, parameter INIT_1F = 256'h0,
+    parameter INIT_20 = 256'h0, parameter INIT_21 = 256'h0,
+    parameter INIT_22 = 256'h0, parameter INIT_23 = 256'h0,
+    parameter INIT_24 = 256'h0, parameter INIT_25 = 256'h0,
+    parameter INIT_26 = 256'h0, parameter INIT_27 = 256'h0,
+    parameter INIT_28 = 256'h0, parameter INIT_29 = 256'h0,
+    parameter INIT_2A = 256'h0, parameter INIT_2B = 256'h0,
+    parameter INIT_2C = 256'h0, parameter INIT_2D = 256'h0,
+    parameter INIT_2E = 256'h0, parameter INIT_2F = 256'h0,
+    parameter INIT_30 = 256'h0, parameter INIT_31 = 256'h0,
+    parameter INIT_32 = 256'h0, parameter INIT_33 = 256'h0,
+    parameter INIT_34 = 256'h0, parameter INIT_35 = 256'h0,
+    parameter INIT_36 = 256'h0, parameter INIT_37 = 256'h0,
+    parameter INIT_38 = 256'h0, parameter INIT_39 = 256'h0,
+    parameter INIT_3A = 256'h0, parameter INIT_3B = 256'h0,
+    parameter INIT_3C = 256'h0, parameter INIT_3D = 256'h0,
+    parameter INIT_3E = 256'h0, parameter INIT_3F = 256'h0,
+    parameter INITP_00 = 256'h0, parameter INITP_01 = 256'h0,
+    parameter INITP_02 = 256'h0, parameter INITP_03 = 256'h0,
+    parameter INITP_04 = 256'h0, parameter INITP_05 = 256'h0,
+    parameter INITP_06 = 256'h0, parameter INITP_07 = 256'h0
+)(
+    // Port A
+    output reg [15:0] DOA,
+    output     [ 1:0] DOPA,
+    input      [13:0] ADDRA,
+    input             CLKARDCLK,
+    input             ENARDEN,
+    input             RSTRAMARSTRAM,
+    input             RSTREGARSTREG,
+    input             REGCEAREGCE,
+    input      [ 1:0] WEA,
+    input      [15:0] DIA,
+    input      [ 1:0] DIPA,
+    // Port B
+    output reg [15:0] DOB,
+    output     [ 1:0] DOPB,
+    input      [13:0] ADDRB,
+    input             CLKBWRCLK,
+    input             ENBWREN,
+    input             RSTRAMB,
+    input             RSTREGB,
+    input             REGCEB,
+    input      [ 3:0] WEBWE,
+    input      [15:0] DIB,
+    input      [ 1:0] DIPB
+);
+    reg [15:0] mem [0:1023];
+    integer i;
+    initial begin
+        for (i = 0; i < 1024; i = i + 1) mem[i] = 16'h0;
+    end
+
+    wire [9:0] addr_a = ADDRA[13:4];
+    wire [9:0] addr_b = ADDRB[13:4];
+
+    always @(posedge CLKARDCLK) begin
+        if (ENARDEN) begin
+            if (WEA[0] | WEA[1]) mem[addr_a] <= DIA;
+            DOA <= mem[addr_a];
+        end
+    end
+
+    always @(posedge CLKBWRCLK) begin
+        if (ENBWREN)
+            DOB <= mem[addr_b];
+    end
+
+    assign DOPA = 2'b0;
+    assign DOPB = 2'b0;
+endmodule
+
+// ---------------------------------------------------------------------------
+// RAMB16BWER: kept as a no-op stub so old files don't cause unknown-module
+// errors if accidentally included. RAM_block.v now uses RAMB18E1.
 // ---------------------------------------------------------------------------
 module RAMB16BWER #(
     parameter DATA_WIDTH_A        = 18,
