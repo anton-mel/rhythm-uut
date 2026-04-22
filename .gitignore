@@ -13,6 +13,7 @@
 !*.xcf
 !*.xise
 !*.swp
+!*.sh
 #!*.ngc
 
 ## And these special ngf modules, which are pre-sythesized by OK, so they need
