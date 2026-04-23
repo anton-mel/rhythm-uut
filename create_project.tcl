@@ -39,13 +39,3 @@ add_files -fileset constrs_1 xem7310.xdc
 # Comment out if you want to open the GUI without waiting.
 synth_design -rtl -name rtl_1
 
-puts "------------------------------------------------------------"
-puts "Project created: $project_dir/$project_name.xpr"
-puts "Top module:      top"
-puts "Part:            $part"
-puts ""
-puts "Next steps:"
-puts "  1. Fill in pin LOC assignments in xem7310.xdc"
-puts "  2. Run synthesis:   launch_runs synth_1"
-puts "  3. Run impl:        launch_runs impl_1 -to_step write_bitstream"
-puts "------------------------------------------------------------"
