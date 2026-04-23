@@ -7,10 +7,21 @@
 
 # ===========================================================================
 # Clock — 200 MHz oscillator (Bank 13, LVCMOS33)
+#
+# AB11 is the system clock available on the MC1 expansion connector but is
+# NOT a clock-capable (MRCC/SRCC) pin, so it cannot drive a BUFG directly.
+# CLOCK_DEDICATED_ROUTE FALSE allows implementation to proceed for now.
+#
+# To fix properly: confirm the oscillator pin from the XEM7310 schematic and
+# replace AB11 with the correct MRCC pin. The clock-capable options on the
+# expansion connectors are:
+#   V4 (B34_L12P_MRCC, MC1 pin 77) — preferred for Bank 34 clocking
+#   H4 (B35_L12P_MRCC, MC2 pin 77) — preferred for Bank 35 clocking
 # ===========================================================================
 set_property PACKAGE_PIN AB11      [get_ports clk1_in]
 set_property IOSTANDARD  LVCMOS33  [get_ports clk1_in]
 create_clock -period 5.000 -name clk1_in [get_ports clk1_in]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk1_in_IBUF]
 
 # ===========================================================================
 # LEDs (active-low, Bank 16, VCCO = 1.5 V)
