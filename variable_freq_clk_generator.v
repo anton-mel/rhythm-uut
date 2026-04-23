@@ -24,9 +24,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module variable_freq_clk_generator #(
-	parameter real CLKFBOUT_MULT_F  = 42.0,  // VCO multiplier  (default → 840 MHz VCO)
-	parameter integer DIVCLK_DIVIDE = 5,     // VCO pre-divider (default → 840 MHz VCO)
-	parameter real CLKOUT0_DIVIDE_F = 10.0   // Output divider  (default → 84 MHz out)
+	parameter real CLKFBOUT_MULT_F  = 21.0,  // VCO multiplier  (200 MHz * 21 / 5 = 840 MHz VCO)
+	parameter integer DIVCLK_DIVIDE = 5,     // VCO pre-divider
+	parameter real CLKOUT0_DIVIDE_F = 10.0   // Output divider  (840 MHz / 10 = 84 MHz out)
 	)
 	(
 	input  wire clk1,     // 100 MHz input clock
@@ -39,7 +39,7 @@ module variable_freq_clk_generator #(
 	wire clkfb;
 
 	MMCME2_BASE #(
-		.CLKIN1_PERIOD     (10.0),           // 100 MHz input
+		.CLKIN1_PERIOD     (5.0),            // 200 MHz input
 		.CLKFBOUT_MULT_F   (CLKFBOUT_MULT_F),
 		.DIVCLK_DIVIDE     (DIVCLK_DIVIDE),
 		.CLKOUT0_DIVIDE_F  (CLKOUT0_DIVIDE_F),
